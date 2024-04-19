@@ -31,10 +31,10 @@ BaseLayer::BaseLayer(const size_t& in, const size_t& out,
                      const unsigned char& activationMode):
 m_inSize(in),
 m_outSize(out),
-m_deltaB(new VectorXf(out)),
 m_biases(new VectorXf(out)),
-m_deltaW(new MatrixXf(out, in)),
-m_weights(new MatrixXf(out, in))
+m_weights(new MatrixXf(out, in)),
+m_deltaB(new VectorXf(out)),
+m_deltaW(new MatrixXf(out, in))
 {
     this->_initializeBuffers();
     
@@ -63,6 +63,9 @@ BaseLayer::~BaseLayer()
 {
     delete this->m_biases;
     delete this->m_weights;
+    
+    delete this->m_deltaB;
+    delete this->m_deltaW;
     
     delete this->m_activationEngine;
 }
