@@ -12,7 +12,7 @@ using Eigen::VectorXf;
 
 void Sigmoid::main(VectorXf& input, VectorXf& output) const
 {
-    output = input.unaryExpr( [this](float x){return 1 / (1+exp(-x));} );
+    output = input.unaryExpr( [](float x){return 1 / (1+exp(-x));} );
 }
 
 void Sigmoid::prim(VectorXf& input, VectorXf& output) const
@@ -23,7 +23,7 @@ void Sigmoid::prim(VectorXf& input, VectorXf& output) const
 
 void Softmax::main(VectorXf& input, VectorXf& output) const
 {
-    output = input.unaryExpr( [this](float x){return exp(x);} );
+    output = input.unaryExpr( [](float x){return exp(x);} );
     output /= output.sum();
 }
 

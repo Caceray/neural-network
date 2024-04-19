@@ -33,3 +33,7 @@
 
 # Mac files
 **/.DS_Store
+
+# Directories
+data/
+exports/
