@@ -187,14 +187,6 @@ void getStatistics(float means[], float stds[], const MatrixXf& W, const VectorX
 void BaseLayer::getStat(float means[], float stds[]) const
 {
     getStatistics(means, stds, *this->m_weights, *this->m_biases);
-//    means[0] = this->m_weights->mean();
-//    means[1] = this->m_biases->mean();
-//
-//    MatrixXf* mat(this->m_weights);
-//    VectorXf* vec(this->m_biases);
-//
-//    stds[0] = sqrt( (mat->array() - means[0]).square().sum() / mat->size() );
-//    stds[1] = sqrt( (vec->array() - means[1]).square().sum() / vec->size() );
 }
 
 void BaseLayer::print() const
