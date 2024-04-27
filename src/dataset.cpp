@@ -33,7 +33,7 @@ Dataset::~Dataset()
 {
     if(this->m_sizeTraining)
     {
-        for(int i(0); i<this->m_sizeTraining; i++)
+        for(size_t i(0); i<this->m_sizeTraining; i++)
         {
             delete this->m_training[i];
         }
@@ -41,7 +41,7 @@ Dataset::~Dataset()
         
         if(this->m_sizeValidation)
         {
-            for(int i(0); i<this->m_sizeValidation; i++)
+            for(size_t i(0); i<this->m_sizeValidation; i++)
             {
                 delete this->m_validation[i];
             }
@@ -58,7 +58,7 @@ void Dataset::addTrainingData(DataPair **data, const size_t& size)
     
     // Add training data in vector to shuffle during SGD
     this->m_data = vector<DataPair*>(size);
-    for(int i(0); i<size; i++)
+    for(size_t i(0); i<size; i++)
     {
         this->m_data[i] = m_training[i];
     }
@@ -73,7 +73,7 @@ void Dataset::addValidationData(DataPair **data, const size_t &size)
 
 void Dataset::_populate(DataPair **container, DataPair **data, const size_t& size)
 {
-    for(int i(0); i<size; i++)
+    for(size_t i(0); i<size; i++)
     {
         container[i] = new DataPair(data[i]->input, data[i]->output);
     }
