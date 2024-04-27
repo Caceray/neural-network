@@ -22,7 +22,7 @@ enum class NetworkActivationMode : unsigned char
 class Network
 {
 public:
-    Network(size_t sizes[], const int& N, const NetworkActivationMode& mode);
+    Network(const int sizes[], const int& N, const NetworkActivationMode& mode);
     Network(const std::string& fileName);
     ~Network();
     
@@ -39,8 +39,8 @@ public:
 
 private:
     // Construction
-    size_t m_size;
-    size_t* m_sizes;
+    int m_size;
+    const int* m_sizes;
     BaseLayer** m_layers;
     
     // SGD
@@ -53,7 +53,7 @@ private:
     //SGD functions
     void _initParameters(const size_t& miniBatchSize, const size_t& epoch, const float& eta);
     void _backprop(const DataPair& datapair) const;
-    void _updateMiniBatch(int& offset, Dataset& dataset);
+    void _updateMiniBatch(size_t& offset, Dataset& dataset);
     void _updateWeightsAndBiases();
     void _updateWeightsAndBiasesAndEvaluateDelta(const Dataset& dataset);
 };

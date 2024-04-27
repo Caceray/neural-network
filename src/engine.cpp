@@ -33,17 +33,18 @@ string vectorAsString(const VectorXf& v)
     return ss.str();
 };
 
-Network::Network(size_t sizes[], const int& N, const NetworkActivationMode& mode):
+Network::Network(const int sizes[], const int& N, const NetworkActivationMode& mode):
 m_size(N-1),
-m_sizes(new size_t[N]),
 m_layers(new BaseLayer*[N-1])
 {
+    int *mySize = new int[N];
     for(int i(0); i<N; i++)
     {
-        this->m_sizes[i] = sizes[i];
+        mySize[i] = sizes[i];
     }
+    this->m_sizes = mySize;
 
-    size_t& layersCount(this->m_size);
+    const int& layersCount(this->m_size);
     for(int i(0); i<layersCount-1; i++)
     {
         this->m_layers[i] = new HiddenLayer(sizes[i], sizes[i+1]);
@@ -70,10 +71,10 @@ void Network::SGD(Dataset& dataset, float& accuracy, const size_t& miniBatchSize
     cout << "Batches count = "+to_string(nBatches) << endl;
     
     this->evaluateAccuracy(dataset, accuracy, 0);
-    for(int epoch(0); epoch < this->m_epoch; epoch++)
+    for(size_t epoch(0); epoch < this->m_epoch; epoch++)
     {
         dataset.shuffle();
-        for(int i(0); i<nBatches; i++)
+        for(size_t i(0); i<nBatches; i++)
         {
             this->_updateMiniBatch(i, dataset);
         }
@@ -89,9 +90,9 @@ void Network::feedForward(VectorXf &input) const
     }
 }
 
-void Network::_updateMiniBatch(int& offset, Dataset &dataset)
+void Network::_updateMiniBatch(size_t& offset, Dataset &dataset)
 {
-    for(int i(0); i<this->m_miniBatchSize; i++)
+    for(size_t i(0); i<this->m_miniBatchSize; i++)
     {
         size_t idx(i + offset * this->m_miniBatchSize);
         this->_backprop(dataset[idx]);
@@ -101,7 +102,7 @@ void Network::_updateMiniBatch(int& offset, Dataset &dataset)
 
 void Network::_backprop(const DataPair &datapair) const
 {
-    const size_t& N(this->m_size);
+    const int& N(this->m_size);
 
     VectorXf activation(datapair.input);
 
@@ -176,7 +177,7 @@ void Network::evaluateAccuracy(Dataset& dataset, float& accuracy, const size_t& 
 {
     float success(0);
     size_t idxTarget, idxComputed;
-    for(int i(0); i<dataset.validationSize(); i++)
+    for(size_t i(0); i<dataset.validationSize(); i++)
     {
         DataPair datapair(dataset.getTestData(i));
         VectorXf activation(datapair.input);
@@ -245,18 +246,20 @@ void Network::toBinary(const std::string &dest) const
     }
 }
 
-Network::Network(const string &fileName)
+Network::Network(const string &fileName):m_size(0)
 {
     ifstream file(fileName, ios::binary);
     boost::archive::binary_iarchive input(file);
-    size_t N;
-    input >> N;
+    
+    int N; input >> N;
     this->m_size = N;
-    this->m_sizes = new size_t[N+1];
+    
+    int *sizes = new int[N+1];
     for(int i(0); i<N+1; i++)
     {
-        input >> this->m_sizes[i];
+        input >> sizes[i];
     }
+    this->m_sizes = sizes;
     
     // Init layers
     this->m_layers = new BaseLayer*[N];

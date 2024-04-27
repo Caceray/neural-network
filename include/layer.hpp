@@ -16,7 +16,7 @@ using Eigen::VectorXf;
 class BaseLayer
 {
 public:
-    BaseLayer(const size_t& in, const size_t& out,
+    BaseLayer(const int& in, const int& out,
               const unsigned char& activationMode);
     virtual ~BaseLayer();
     
@@ -48,8 +48,8 @@ public:
 protected:
     static std::mt19937 Generator;
     
-    size_t m_inSize;
-    size_t m_outSize;
+    const int m_inSize;
+    const int m_outSize;
     
     // Current weights and biases
     VectorXf* m_biases;
@@ -75,7 +75,7 @@ private:
 class HiddenLayer : public BaseLayer
 {
 public :
-    HiddenLayer(size_t& in, size_t& out,
+    HiddenLayer(const int& in, const int& out,
                 unsigned char activationMode=0);
     
     void getDelta(VectorXf& a) const override;
@@ -84,7 +84,7 @@ public :
 class OutputLayer : public BaseLayer
 {
 public:
-    OutputLayer(const size_t& in, const size_t& out,
+    OutputLayer(const int& in, const int& out,
                 const unsigned char& activationMode,
                 unsigned char costMode=0);
     ~OutputLayer();
