@@ -21,7 +21,7 @@ T readInt(ifstream& file) {
 
 void loadBinary(const string &key, Dataset& dataset)
 {
-    size_t N = key == "train" ? 60000 : 10000;
+    int N = key == "train" ? 60000 : 10000;
     
     // Create output
     DataPair** data = new DataPair*[N];

@@ -1,6 +1,6 @@
-TARGET = neuralnetwork.app
+TARGET = myApp
 CC = g++
-CFLAGS = -std=gnu++20 -Wall
+CFLAGS = -std=gnu++20 -Wall -Wextra -O2
 SRCDIR = src
 INCDIR = include
 

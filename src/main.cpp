@@ -2,12 +2,13 @@
 #include "mnist.hpp"
 #include "dataset.hpp"
 #include "engine.hpp"
+#include <chrono>
 
 void saveAndLoad()
 {
     // Initialize a network with 3 hidden layers
     const int N(5);
-    size_t sizes[N] = {100, 30, 25, 20, 10};
+    const int sizes[N] = {100, 30, 25, 20, 10};
     Network net(sizes, N, NetworkActivationMode::Sigmoid);
     
     // Export to CSV
@@ -32,14 +33,18 @@ void trainWithMnist()
     
     // Initialize the network for MNIST with 30 hidden neurons
     const int N(3);
-    size_t sizes[N] = {784,30,10};
+    const int sizes[N] = {784,30,10};
     Network net(sizes, N, NetworkActivationMode::Sigmoid);
     
     std::cout << "Run Stochastic Gradient Descent algorithm" << std::endl;
     size_t miniBatchSize(10), epoch(5);
     float eta(3), accuracy;
-    net.SGD(dataset, accuracy, miniBatchSize, epoch, eta);
     
+    auto start = std::chrono::high_resolution_clock::now();
+    net.SGD(dataset, accuracy, miniBatchSize, epoch, eta);
+    auto end = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    std::cout << "Elapsed time = " << duration.count()  << " ms" << std::endl;
     net.toBinary("./exports/myNetwork");
 }
 

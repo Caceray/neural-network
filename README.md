@@ -25,6 +25,7 @@ Instructions on setting up the project on a local machine.
 
 ### Prerequisites
 
+- [Eigen](https://eigen.tuxfamily.org/index.php?title=Main_Page)
 - Boost
 - [MNIST Database](http://yann.lecun.com/exdb/mnist/)
 

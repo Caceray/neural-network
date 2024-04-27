@@ -27,7 +27,7 @@ void printStatV2(MatrixXf& mat)
     cout << endl;
 }
 
-BaseLayer::BaseLayer(const size_t& in, const size_t& out,
+BaseLayer::BaseLayer(const int& in, const int& out,
                      const unsigned char& activationMode):
 m_inSize(in),
 m_outSize(out),
@@ -132,7 +132,7 @@ MatrixXf* BaseLayer::getTempWeight() const
     return this->m_deltaW;
 }
 
-HiddenLayer::HiddenLayer(size_t& in, size_t& out, unsigned char activationMode):BaseLayer(in, out, activationMode){}
+HiddenLayer::HiddenLayer(const int& in, const int& out, unsigned char activationMode):BaseLayer(in, out, activationMode){}
 
 void HiddenLayer::getDelta(VectorXf& a) const
 {
@@ -141,7 +141,7 @@ void HiddenLayer::getDelta(VectorXf& a) const
     *(this->m_deltaB) += a;
 }
 
-OutputLayer::OutputLayer(const size_t& in, const size_t& out,
+OutputLayer::OutputLayer(const int& in, const int& out,
                          const unsigned char& activationMode,
                          unsigned char costMode):BaseLayer(in, out, activationMode)
 {
@@ -187,14 +187,6 @@ void getStatistics(float means[], float stds[], const MatrixXf& W, const VectorX
 void BaseLayer::getStat(float means[], float stds[]) const
 {
     getStatistics(means, stds, *this->m_weights, *this->m_biases);
-//    means[0] = this->m_weights->mean();
-//    means[1] = this->m_biases->mean();
-//
-//    MatrixXf* mat(this->m_weights);
-//    VectorXf* vec(this->m_biases);
-//
-//    stds[0] = sqrt( (mat->array() - means[0]).square().sum() / mat->size() );
-//    stds[1] = sqrt( (vec->array() - means[1]).square().sum() / vec->size() );
 }
 
 void BaseLayer::print() const
@@ -223,7 +215,7 @@ void serializeVector(Archive& ar, const VectorXf& v)
 template<class Archive>
 void unserializeVector(Archive& ar, VectorXf& v)
 {
-    size_t N; ar >> N;
+    int N; ar >> N;
     v = VectorXf(N);
     for(int i(0); i<N; i++)
     {
@@ -236,9 +228,9 @@ void serializeMatrix(Archive & ar, const MatrixXf& m)
 {
     size_t cols(m.cols()), rows(m.rows());
     ar << cols << rows;
-    for(int col(0); col<cols; col++)
+    for(size_t col(0); col<cols; col++)
     {
-        for(int row(0); row<rows; row++)
+        for(size_t row(0); row<rows; row++)
         {
             ar << m(row, col);
         }
@@ -248,7 +240,7 @@ void serializeMatrix(Archive & ar, const MatrixXf& m)
 template<class Archive>
 void unserializeMatrix(Archive & ar, MatrixXf& m)
 {
-    size_t cols, rows;
+    int cols, rows;
     ar >> cols;
     ar >> rows;
     m = MatrixXf(rows, cols);
