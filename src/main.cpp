@@ -3,6 +3,7 @@
 #include "dataset.hpp"
 #include "engine.hpp"
 #include <chrono>
+#include <fstream>
 
 void saveAndLoad()
 {
@@ -22,6 +23,12 @@ void saveAndLoad()
     // Load from binary
     std::cout << "Loading from binary..." << std::endl;
     Network net2("./exports/myNetwork");
+    
+//    const int sizes_different[N-1] = {100, 30, 20, 20};
+    Network net3(sizes, N, NetworkActivationMode::Sigmoid);
+    std::ifstream file("./exports/myNetwork", std::ios::binary);
+    boost::archive::binary_iarchive ar(file);
+    net3.loadBinary(ar);
 }
 
 void trainWithMnist()
@@ -38,10 +45,10 @@ void trainWithMnist()
     
     std::cout << "Run Stochastic Gradient Descent algorithm" << std::endl;
     size_t miniBatchSize(10), epoch(5);
-    float eta(3), accuracy;
+    float eta(3);
     
     auto start = std::chrono::high_resolution_clock::now();
-    net.SGD(dataset, accuracy, miniBatchSize, epoch, eta);
+    net.SGD(dataset, miniBatchSize, epoch, eta);
     auto end = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
     std::cout << "Elapsed time = " << duration.count()  << " ms" << std::endl;

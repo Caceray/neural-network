@@ -11,9 +11,6 @@ Implementation of SGD algorithm for dense neural network.
     - [Prerequisites](#prerequisites)
     - [Installation](#installation)
   - [Usage](#usage)
-  - [Contributing](#contributing)
-  - [License](#license)
-  - [Contact](#contact)
 
 ## About
 
@@ -53,3 +50,5 @@ neural-network/
 
 3) Use Makefile
 
+### Usage
+The library lib/neuralnetwork.a is created by Makefile, you can import this file to any other project.

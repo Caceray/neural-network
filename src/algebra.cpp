@@ -23,6 +23,10 @@ void Sigmoid::prim(VectorXf& input, VectorXf& output) const
 
 void Softmax::main(VectorXf& input, VectorXf& output) const
 {
+    // Normalize before computing softmax
+    input.array() -= input.maxCoeff();
+
+    // Softmax formula
     output = input.unaryExpr( [](float x){return exp(x);} );
     output /= output.sum();
 }

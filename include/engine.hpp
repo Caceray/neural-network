@@ -24,18 +24,21 @@ class Network
 public:
     Network(const int sizes[], const int& N, const NetworkActivationMode& mode);
     Network(const std::string& fileName);
+    
     ~Network();
     
-    void SGD(Dataset& dataset, float& accuracy, const size_t& miniBatchSize, const size_t& epoch, const float& eta);
+    void SGD(Dataset& dataset, const size_t& miniBatchSize, const size_t& epoch, const float& eta, const bool displayProgress = false);
     void feedForward(VectorXf& input) const;
     
     void print() const;
     void to_csv(const std::string& dest) const;
     void toBinary(const std::string& dest) const;
-
+    void toBinary(boost::archive::binary_oarchive & ar) const;
+    void loadBinary(boost::archive::binary_iarchive & ar) const;
+    
     void getStats() const;
         
-    void evaluateAccuracy(Dataset& dataset, float& accuracy, const size_t& id=0) const;
+    float evaluateAccuracy(Dataset& dataset) const;
 
 private:
     // Construction

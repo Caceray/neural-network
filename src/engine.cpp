@@ -1,6 +1,7 @@
 #include <cmath>
 #include <random>
 #include <string>
+#include <sstream>
 #include <fstream>
 #include <iostream>
 #include <filesystem>
@@ -63,15 +64,23 @@ Network::~Network()
     }
 }
 
-void Network::SGD(Dataset& dataset, float& accuracy, const size_t& miniBatchSize, const size_t& epoch, const float& eta)
+void Network::SGD(Dataset& dataset, const size_t& miniBatchSize, const size_t& epoch, const float& eta, const bool displayProgress)
 {
     this->_initParameters(miniBatchSize, epoch, eta);
     
     size_t nBatches(dataset.trainingSize()/this->m_miniBatchSize);
-    cout << "Batches count = "+to_string(nBatches) << endl;
+    cout << "Running SGD, batches count = "+to_string(nBatches) << "\n";
     
-    this->evaluateAccuracy(dataset, accuracy, 0);
-    for(size_t epoch(0); epoch < this->m_epoch; epoch++)
+    if(displayProgress)
+    {
+        if(!dataset.validationSize())
+        {
+            throw logic_error("No validation set provided");
+        }
+        this->evaluateAccuracy(dataset);
+    }
+    
+    for(size_t e(0); e < this->m_epoch; e++)
     {
         dataset.shuffle();
         for(size_t i(0); i<nBatches; i++)
@@ -79,7 +88,11 @@ void Network::SGD(Dataset& dataset, float& accuracy, const size_t& miniBatchSize
             this->_updateMiniBatch(i, dataset);
         }
     }
-    this->evaluateAccuracy(dataset, accuracy, epoch);
+    
+    if(displayProgress)
+    {
+        this->evaluateAccuracy(dataset);
+    }
 }
 
 void Network::feedForward(VectorXf &input) const
@@ -119,7 +132,7 @@ void Network::_backprop(const DataPair &datapair) const
     {
         size_t idx(N-1-i);
         this->m_layers[idx]->getDelta(activation);
-
+        
         MatrixXf* dW(this->m_layers[idx]->getTempWeight());
         if(idx)
         {
@@ -173,27 +186,34 @@ void Network::_updateWeightsAndBiasesAndEvaluateDelta(const Dataset& dataset)
     cout << endl;
 }
 
-void Network::evaluateAccuracy(Dataset& dataset, float& accuracy, const size_t& id) const
+float Network::evaluateAccuracy(Dataset& dataset) const
 {
+    // A valid output response is an output response where the index 
+    // of the largest element is equal to the index of the largest
+    // element in the target vector.
+    
     float success(0);
     size_t idxTarget, idxComputed;
     for(size_t i(0); i<dataset.validationSize(); i++)
     {
+        // Get validation data
         DataPair datapair(dataset.getTestData(i));
+        
+        // Feedfoward input
         VectorXf activation(datapair.input);
         this->feedForward(activation);
+        
+        // Compare output from feedforward and output target
         datapair.output.maxCoeff(&idxTarget);
         activation.maxCoeff(&idxComputed);
+        
+        // Evaluate success
         if(idxTarget==idxComputed)
         {
             success++;
         }
     }
-    accuracy = 100 * success/dataset.validationSize();
-    stringstream ss;
-    ss << " >>> Epoch [" << id;
-    ss << "] success rate [" << success << "/" << dataset.validationSize() << "]";
-    cout << ss.str() << endl;
+    return 100 * success/dataset.validationSize();
 }
 
 void Network::getStats() const
@@ -235,14 +255,47 @@ void Network::toBinary(const std::string &dest) const
 {
     ofstream file(dest, ios::binary);
     boost::archive::binary_oarchive output(file);
-    output << this->m_size;
+    this->toBinary(output);
+}
+
+void Network::toBinary(boost::archive::binary_oarchive & ar) const
+{
+    ar << this->m_size;
     for(int i(0); i<this->m_size+1; i++)
     {
-        output << this->m_sizes[i];
+        ar << this->m_sizes[i];
     }
     for(int i(0); i<this->m_size; i++)
     {
-        this->m_layers[i]->toBinary(output);
+        this->m_layers[i]->toBinary(ar);
+    }
+}
+
+void Network::loadBinary(boost::archive::binary_iarchive &ar) const
+{
+    int X; ar >> X;
+    if(X != this->m_size)
+    {
+        stringstream err;
+        err << "Incompatible m_size [" << X << "] with current [" << this->m_size << "]\n";
+        throw logic_error(err.str());
+    }
+    
+    for(int i(0); i<this->m_size+1; i++)
+    {
+        ar >> X;
+        if(X != this->m_sizes[i])
+        {
+            stringstream err;
+            err << "Incompatible m_sizes[" << i << "] : ";
+            err << "[" << X << "] != [" << this->m_sizes[i] << "].\n";
+            throw logic_error(err.str());
+        }
+    }
+    
+    for(int i(0); i<this->m_size; i++)
+    {
+        this->m_layers[i]->fromBinary(ar);
     }
 }
 
@@ -271,11 +324,9 @@ Network::Network(const string &fileName):m_size(0)
     this->m_layers[N-1] = new OutputLayer(this->m_sizes[N-1], this->m_sizes[N], 1);
     
     stringstream ss;
-    ss << "Loading [" << this->m_size << "] layers";
+    ss << "Loading [" << this->m_size << "] layers.\n";
     
     // Fill layers
-    cout << ss.str() << endl;
-    
     for(int i(0); i<this->m_size; i++)
     {
         this->m_layers[i]->fromBinary(input);
