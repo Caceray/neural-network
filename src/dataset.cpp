@@ -4,6 +4,10 @@
 #include <Eigen/Dense>
 #include <algorithm>
 #include <random>
+#include <fstream>
+
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
 
 using namespace std;
 
@@ -29,6 +33,47 @@ m_sizeTraining(0),
 m_sizeValidation(0)
 {}
 
+Dataset::Dataset(const string& filename):Dataset()
+{
+    // Check if file exists
+    ifstream file(filename, ios::binary);
+    if(!file.is_open())
+    {
+        throw logic_error("Could not open filename : "+filename);
+    }
+    
+    // Open file
+    boost::archive::binary_iarchive input(file);
+
+    // Extract data from file
+    input >> this->m_inputSize;
+    input >> this->m_outputSize;
+    input >> this->m_sizeTraining;
+    
+    this->m_training = new DataPair*[this->m_sizeTraining];
+    
+    for(size_t i(0); i<this->m_sizeTraining; i++)
+    {
+        DataPair *dp = new DataPair(this->m_inputSize, this->m_outputSize);
+        for(size_t j(0); j<this->m_inputSize; j++)
+        {
+            input >> dp->input(j);
+        }
+        for(size_t j(0); j<this->m_outputSize; j++)
+        {
+            input >> dp->output(j);
+        }
+        this->m_training[i] = dp;
+    }
+    
+    // Add training data in vector to shuffle during SGD
+    this->m_data = vector<DataPair*>(this->m_sizeTraining);
+    for(size_t i(0); i<this->m_sizeTraining; i++)
+    {
+        this->m_data[i] = m_training[i];
+    }
+}
+
 Dataset::~Dataset()
 {
     if(this->m_sizeTraining)
@@ -52,6 +97,9 @@ Dataset::~Dataset()
 
 void Dataset::addTrainingData(DataPair **data, const size_t& size)
 {
+    this->m_inputSize = data[0]->input.size();
+    this->m_outputSize = data[0]->output.size();
+    
     this->m_sizeTraining = size;
     this->m_training = new DataPair*[size];
     this->_populate(this->m_training, data, size);
@@ -124,4 +172,25 @@ ostream& operator<<(ostream& os, const DataPair& datapair)
     }
     os << "].";
     return os;
+}
+
+void Dataset::toBinary(const string& filename) const
+{
+    ofstream file(filename, ios::binary);
+    boost::archive::binary_oarchive output(file);
+    output << this->m_inputSize;
+    output << this->m_outputSize;
+    output << this->m_sizeTraining;
+    for(size_t i(0); i<this->m_sizeTraining; i++)
+    {
+        DataPair *dp(this->m_training[i]);
+        for(auto &x:dp->input)
+        {
+            output << x;
+        }
+        for(auto &x:dp->output)
+        {
+            output << x;
+        }
+    }
 }

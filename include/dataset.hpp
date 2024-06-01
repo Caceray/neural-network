@@ -23,6 +23,7 @@ class Dataset
 {
 public:
     Dataset();
+    Dataset(const std::string& filename);
     ~Dataset();
     
     void addTrainingData(DataPair* data[], const size_t& size);
@@ -35,7 +36,13 @@ public:
     DataPair getTestData(const size_t& i) const;
     
     void shuffle();
+    
+    void toBinary(const std::string& dest) const;
+    
 private:
+    size_t m_inputSize;
+    size_t m_outputSize;
+    
     size_t m_sizeTraining;
     DataPair** m_training;
     

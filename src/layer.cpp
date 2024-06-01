@@ -41,7 +41,7 @@ m_deltaW(new MatrixXf(out, in))
     MatrixXf*& W(this->m_weights);
     VectorXf*& B(this->m_biases);
     
-    *this->m_weights = W->unaryExpr([](float){return distribution(BaseLayer::Generator);});
+    *W = W->unaryExpr([](float){return distribution(BaseLayer::Generator);});
     *B = B->unaryExpr([](float){return distribution(BaseLayer::Generator);});
     
     *W /= pow(in, .5);
@@ -79,6 +79,7 @@ void BaseLayer::_initializeBuffers()
 void BaseLayer::_applyMain(VectorXf &a, VectorXf& result) const
 {
     this->m_activationEngine->main(a, result);
+    assert(!result.array().isNaN().any());
 }
 
 void BaseLayer::_applyPrim(VectorXf &a, VectorXf& result) const
@@ -215,9 +216,9 @@ void serializeVector(Archive& ar, const VectorXf& v)
 template<class Archive>
 void unserializeVector(Archive& ar, VectorXf& v)
 {
-    int N; ar >> N;
+    size_t N; ar >> N;
     v = VectorXf(N);
-    for(int i(0); i<N; i++)
+    for(size_t i(0); i<N; i++)
     {
         ar >> v(i);
     }
@@ -240,13 +241,13 @@ void serializeMatrix(Archive & ar, const MatrixXf& m)
 template<class Archive>
 void unserializeMatrix(Archive & ar, MatrixXf& m)
 {
-    int cols, rows;
+    size_t cols, rows;
     ar >> cols;
     ar >> rows;
     m = MatrixXf(rows, cols);
-    for(int col(0); col<cols; col++)
+    for(size_t col(0); col<cols; col++)
     {
-        for(int row(0); row<rows; row++)
+        for(size_t row(0); row<rows; row++)
         {
             ar >> m(row, col);
         }

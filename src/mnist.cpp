@@ -37,11 +37,17 @@ void loadBinary(const string &key, Dataset& dataset)
     {
         // Read magic number : test 1
         int magicNumberImage(readInt<int>(imageFile)), magicNumberLabel(readInt<int>(labelFile));
-        assert(magicNumberImage==2051 and magicNumberLabel==2049);
+        if(magicNumberImage!=2051 or magicNumberLabel!=2049)
+        {
+            throw logic_error("Invalid in magic numbers.\n");
+        }
         
         // Read data size : test 2
         int numItems(readInt<int>(imageFile)), numItemsb(readInt<int>(labelFile));
-        assert(numItems==numItemsb);
+        if(numItems!=numItemsb)
+        {
+            throw logic_error("Inconsistent count of imageFile and labelFile");
+        }
         
         int numRows(readInt<int>(imageFile)), numCols(readInt<int>(imageFile));
         int size(numRows*numCols);
@@ -62,7 +68,7 @@ void loadBinary(const string &key, Dataset& dataset)
             VectorXf output(10);
             output.setZero();
             output[label] = 1;
-//            dataset.push_back(pair<Eigen::VectorXf, unsigned char>(image, label));
+
             data[i] = new DataPair(image, output);
         }
         
