@@ -16,12 +16,10 @@ using Eigen::VectorXf;
 class BaseLayer
 {
 public:
-    BaseLayer(const int& in, const int& out,
-              const unsigned char& activationMode);
+    BaseLayer(const int& in, const int& out, const ActivationType& actiType);
     virtual ~BaseLayer();
     
     // Getters
-    size_t getSize() const;
     MatrixXf* getTempWeight() const;
     
     // Main methods
@@ -45,11 +43,12 @@ public:
     void toBinary(boost::archive::binary_oarchive & ar) const;
     void fromBinary(boost::archive::binary_iarchive & ar);
 
+    bool equals(BaseLayer* other) const;
+    
+    const int inSize;
+    const int outSize;
 protected:
     static std::mt19937 Generator;
-    
-    const int m_inSize;
-    const int m_outSize;
     
     // Current weights and biases
     VectorXf* m_biases;
@@ -75,8 +74,7 @@ private:
 class HiddenLayer : public BaseLayer
 {
 public :
-    HiddenLayer(const int& in, const int& out,
-                unsigned char activationMode=0);
+    HiddenLayer(const int& in, const int& out, const ActivationType& actiType);
     
     void getDelta(VectorXf& a) const override;
 };
@@ -84,9 +82,7 @@ public :
 class OutputLayer : public BaseLayer
 {
 public:
-    OutputLayer(const int& in, const int& out,
-                const unsigned char& activationMode,
-                unsigned char costMode=0);
+    OutputLayer(const int& in, const int& out, const ActivationType& actiType, const CostType& costType);
     ~OutputLayer();
     
     void getDelta(VectorXf& a) const override;

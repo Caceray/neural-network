@@ -13,19 +13,13 @@
 
 using Eigen::VectorXf;
 
-enum class NetworkActivationMode : unsigned char
-{
-    Sigmoid=0,
-    Softmax=1
-};
-
 class Network
 {
 public:
-    Network(const int sizes[], const int& N, const NetworkActivationMode& mode);
-    Network(const std::string& fileName);
-    
+    Network(const int sizes[], const int& N, const ActivationType& actiType, const CostType& costType);
     ~Network();
+    
+    static Network* loadFile(const std::string& fileName);
     
     void SGD(Dataset& dataset, const size_t& miniBatchSize, const size_t& epoch, const float& eta, const bool displayProgress = false);
     void feedForward(VectorXf& input) const;
@@ -39,10 +33,14 @@ public:
     void getStats() const;
         
     float evaluateAccuracy(Dataset& dataset) const;
-
+    
+    const ActivationType activationType;
+    const CostType costType;
+    
+    bool operator == (const Network& other) const;
 private:
     // Construction
-    int m_size;
+    const int m_size;
     const int* m_sizes;
     BaseLayer** m_layers;
     

@@ -27,10 +27,9 @@ void printStatV2(MatrixXf& mat)
     cout << endl;
 }
 
-BaseLayer::BaseLayer(const int& in, const int& out,
-                     const unsigned char& activationMode):
-m_inSize(in),
-m_outSize(out),
+BaseLayer::BaseLayer(const int& in, const int& out, const ActivationType& actiType):
+inSize(in),
+outSize(out),
 m_biases(new VectorXf(out)),
 m_weights(new MatrixXf(out, in)),
 m_deltaB(new VectorXf(out)),
@@ -46,12 +45,12 @@ m_deltaW(new MatrixXf(out, in))
     
     *W /= pow(in, .5);
 
-    switch(activationMode)
+    switch(actiType)
     {
-        case 0 :
+        case ActivationType::Sigmoid :
             this->m_activationEngine = new Sigmoid();
             break;
-        case 1 :
+        case ActivationType::Softmax :
             this->m_activationEngine = new Softmax();
             break;
         default :
@@ -123,17 +122,12 @@ void BaseLayer::updateWeightAndBias(const float &K)
     this->_initializeBuffers();
 }
 
-size_t BaseLayer::getSize() const
-{
-    return this->m_outSize;
-}
-
 MatrixXf* BaseLayer::getTempWeight() const
 {
     return this->m_deltaW;
 }
 
-HiddenLayer::HiddenLayer(const int& in, const int& out, unsigned char activationMode):BaseLayer(in, out, activationMode){}
+HiddenLayer::HiddenLayer(const int& in, const int& out, const ActivationType& actiType):BaseLayer(in, out, actiType){}
 
 void HiddenLayer::getDelta(VectorXf& a) const
 {
@@ -143,15 +137,15 @@ void HiddenLayer::getDelta(VectorXf& a) const
 }
 
 OutputLayer::OutputLayer(const int& in, const int& out,
-                         const unsigned char& activationMode,
-                         unsigned char costMode):BaseLayer(in, out, activationMode)
+                         const ActivationType& actiType,
+                         const CostType& costType):BaseLayer(in, out, actiType)
 {
-    switch (costMode)
+    switch (costType)
     {
-        case 0:
+        case CostType::Quadratic:
             this->m_costEngine = new Quadratic(&this->m_derivative);
             break;
-        case 1 :
+        case CostType::CrossEntropy:
             this->m_costEngine = new CrossEntropy();
             break;
         default:
@@ -264,4 +258,9 @@ void BaseLayer::fromBinary(boost::archive::binary_iarchive & ar)
 {
     unserializeVector(ar, *this->m_biases);
     unserializeMatrix(ar, *this->m_weights);
+}
+
+bool BaseLayer::equals(BaseLayer* other) const
+{
+    return *this->m_weights == *other->m_weights and *this->m_biases == *other->m_biases;
 }

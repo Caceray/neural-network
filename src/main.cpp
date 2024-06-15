@@ -10,7 +10,7 @@ void saveAndLoad()
     // Initialize a network with 3 hidden layers
     const int N(5);
     const int sizes[N] = {100, 30, 25, 20, 10};
-    Network net(sizes, N, NetworkActivationMode::Sigmoid);
+    Network net(sizes, N, ActivationType::Sigmoid, CostType::Quadratic);
     
     // Export to CSV
     std::cout << "Exporting to CSV..." << std::endl;
@@ -22,13 +22,8 @@ void saveAndLoad()
     
     // Load from binary
     std::cout << "Loading from binary..." << std::endl;
-    Network net2("./exports/myNetwork");
-    
-//    const int sizes_different[N-1] = {100, 30, 20, 20};
-    Network net3(sizes, N, NetworkActivationMode::Sigmoid);
-    std::ifstream file("./exports/myNetwork", std::ios::binary);
-    boost::archive::binary_iarchive ar(file);
-    net3.loadBinary(ar);
+    Network* net2 = Network::loadFile("./exports/myNetwork");
+    assert(net == *net2);
 }
 
 void trainWithMnist()
@@ -41,7 +36,7 @@ void trainWithMnist()
     // Initialize the network for MNIST with 30 hidden neurons
     const int N(3);
     const int sizes[N] = {784,30,10};
-    Network net(sizes, N, NetworkActivationMode::Sigmoid);
+    Network net(sizes, N, ActivationType::Sigmoid, CostType::Quadratic);
     
     std::cout << "Run Stochastic Gradient Descent algorithm" << std::endl;
     size_t miniBatchSize(10), epoch(5);
@@ -57,6 +52,6 @@ void trainWithMnist()
 
 int main(int argc, const char * argv[])
 {
-//    saveAndLoad();
-    trainWithMnist();
+    saveAndLoad();
+//    trainWithMnist();
 }

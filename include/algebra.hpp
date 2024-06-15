@@ -7,6 +7,18 @@
 using Eigen::MatrixXf;
 using Eigen::VectorXf;
 
+enum class CostType : unsigned char
+{
+    Quadratic,
+    CrossEntropy
+};
+
+enum class ActivationType : unsigned char
+{
+    Sigmoid,
+    Softmax
+};
+
 class Activation
 {
 public:
