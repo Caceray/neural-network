@@ -38,7 +38,7 @@ Network::Network(const int sizes[], const int& N, const ActivationType& actiType
 activationType(actiType),
 costType(costType),
 m_size(N-1),
-m_layers(new BaseLayer*[N-1])
+m_layers(vector<BaseLayer*>(N-1))
 {
     int *mySize = new int[N];
     for(int i(0); i<N; i++)
@@ -49,8 +49,7 @@ m_layers(new BaseLayer*[N-1])
     const int& layersCount(this->m_size);
     for(int i(0); i<layersCount-1; i++)
     {
-        this->m_layers[i] = new HiddenLayer(sizes[i], sizes[i+1], actiType);
-
+        this->m_layers[i] = new HiddenLayer(sizes[i], sizes[i+1], ActivationType::Sigmoid);
     }
     
     this->m_layers[layersCount-1] = new OutputLayer(sizes[N-2], sizes[N-1], actiType, costType);
@@ -77,7 +76,8 @@ void Network::SGD(Dataset& dataset, const size_t& miniBatchSize, const size_t& e
         {
             throw logic_error("No validation set provided");
         }
-        this->evaluateAccuracy(dataset);
+        float acc(this->evaluateAccuracy(dataset));
+        cout << "Accuracy BEFORE training : " << acc << "%.\n";
     }
     
     for(size_t e(0); e < this->m_epoch; e++)
@@ -91,7 +91,8 @@ void Network::SGD(Dataset& dataset, const size_t& miniBatchSize, const size_t& e
     
     if(displayProgress)
     {
-        this->evaluateAccuracy(dataset);
+        float acc(this->evaluateAccuracy(dataset));
+        cout << "Accuracy AFTER training : " << acc << "%.\n";
     }
 }
 
@@ -120,24 +121,24 @@ void Network::_backprop(const DataPair &datapair) const
     VectorXf activation(datapair.input);
 
     // Feedforward
-    for(int i(0); i<N; i++)
+    for(auto it = this->m_layers.begin(); it != this->m_layers.end(); it++)
     {
-        this->m_layers[i]->feedForwardAndSave(activation);
+        (*it)->feedForwardAndSave(activation);
     }
     
     activation = datapair.output;
 
     // Backward
-    for(int i(0); i<N; i++)
+    for(auto it = this->m_layers.rbegin(); it != this->m_layers.rend(); ++it)
     {
-        size_t idx(N-1-i);
-        this->m_layers[idx]->getDelta(activation);
-        
-        MatrixXf* dW(this->m_layers[idx]->getTempWeight());
-        if(idx)
+        (*it)->getDelta(activation);
+
+        MatrixXf* dW((*it)->getTempWeight());
+        if(&(**it) != m_layers[0])
         {
             // Compute BP4
-            this->m_layers[idx-1]->dotProductWithActivation(activation, dW);
+            auto next_it = it; ++next_it;
+            (*next_it)->dotProductWithActivation(activation, dW);
         }
         else
         {
@@ -145,7 +146,7 @@ void Network::_backprop(const DataPair &datapair) const
         }
         
         // Compute left term of BP3
-        this->m_layers[idx]->dotProductWithWeight(activation);
+        (*it)->dotProductWithWeight(activation);
     }
 }
 

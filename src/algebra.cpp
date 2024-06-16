@@ -49,5 +49,5 @@ CrossEntropy::CrossEntropy(){}
 
 void CrossEntropy::gradient(const VectorXf &x, const VectorXf &y, VectorXf* result) const
 {
-    *result = (x-y).array() / 2;
+    *result = (x-y).array();
 }

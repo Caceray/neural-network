@@ -9,7 +9,7 @@
 using namespace std;
 
 normal_distribution<float> distribution{0, 1};
-mt19937 BaseLayer::Generator(10000);
+mt19937 BaseLayer::Generator(0);
 
 void printStatV2(MatrixXf& mat)
 {
