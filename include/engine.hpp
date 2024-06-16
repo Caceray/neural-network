@@ -42,14 +42,13 @@ private:
     // Construction
     const int m_size;
     const int* m_sizes;
-    BaseLayer** m_layers;
+    std::vector<BaseLayer*> m_layers;
     
     // SGD
     float m_eta;
     size_t m_epoch;
     float m_coefficient;
     size_t m_miniBatchSize;
-    
     
     //SGD functions
     void _initParameters(const size_t& miniBatchSize, const size_t& epoch, const float& eta);
