@@ -34,7 +34,9 @@ string vectorAsString(const VectorXf& v)
     return ss.str();
 };
 
-Network::Network(const int sizes[], const int& N, const NetworkActivationMode& mode):
+Network::Network(const int sizes[], const int& N, const ActivationType& actiType, const CostType& costType):
+activationType(actiType),
+costType(costType),
 m_size(N-1),
 m_layers(new BaseLayer*[N-1])
 {
@@ -44,16 +46,14 @@ m_layers(new BaseLayer*[N-1])
         mySize[i] = sizes[i];
     }
     this->m_sizes = mySize;
-
     const int& layersCount(this->m_size);
     for(int i(0); i<layersCount-1; i++)
     {
-        this->m_layers[i] = new HiddenLayer(sizes[i], sizes[i+1]);
+        this->m_layers[i] = new HiddenLayer(sizes[i], sizes[i+1], actiType);
 
     }
     
-    unsigned char charMode = static_cast<unsigned char>(mode);
-    this->m_layers[layersCount-1] = new OutputLayer(sizes[layersCount-1], sizes[layersCount], charMode);
+    this->m_layers[layersCount-1] = new OutputLayer(sizes[N-2], sizes[N-1], actiType, costType);
 }
 
 Network::~Network()
@@ -261,6 +261,9 @@ void Network::toBinary(const std::string &dest) const
 void Network::toBinary(boost::archive::binary_oarchive & ar) const
 {
     ar << this->m_size;
+    ar << this->activationType;
+    ar << this->costType;
+    
     for(int i(0); i<this->m_size+1; i++)
     {
         ar << this->m_sizes[i];
@@ -273,64 +276,31 @@ void Network::toBinary(boost::archive::binary_oarchive & ar) const
 
 void Network::loadBinary(boost::archive::binary_iarchive &ar) const
 {
-    int X; ar >> X;
-    if(X != this->m_size)
-    {
-        stringstream err;
-        err << "Incompatible m_size [" << X << "] with current [" << this->m_size << "]\n";
-        throw logic_error(err.str());
-    }
-    
-    for(int i(0); i<this->m_size+1; i++)
-    {
-        ar >> X;
-        if(X != this->m_sizes[i])
-        {
-            stringstream err;
-            err << "Incompatible m_sizes[" << i << "] : ";
-            err << "[" << X << "] != [" << this->m_sizes[i] << "].\n";
-            throw logic_error(err.str());
-        }
-    }
-    
     for(int i(0); i<this->m_size; i++)
     {
         this->m_layers[i]->fromBinary(ar);
     }
 }
 
-Network::Network(const string &fileName):m_size(0)
+Network* Network::loadFile(const string &fileName)
 {
     ifstream file(fileName, ios::binary);
     boost::archive::binary_iarchive input(file);
     
     int N; input >> N;
-    this->m_size = N;
+    ActivationType activationType; input >> activationType;
+    CostType costType; input >> costType;
     
     int *sizes = new int[N+1];
     for(int i(0); i<N+1; i++)
     {
         input >> sizes[i];
     }
-    this->m_sizes = sizes;
-    
-    // Init layers
-    this->m_layers = new BaseLayer*[N];
 
-    for(int i(0); i<N-1; i++)
-    {
-        this->m_layers[i] = new HiddenLayer(this->m_sizes[i], this->m_sizes[i+1]);
-    }
-    this->m_layers[N-1] = new OutputLayer(this->m_sizes[N-1], this->m_sizes[N], 1);
+    Network* network = new Network(sizes, N+1, activationType, costType);
+    network->loadBinary(input);
     
-    stringstream ss;
-    ss << "Loading [" << this->m_size << "] layers.\n";
-    
-    // Fill layers
-    for(int i(0); i<this->m_size; i++)
-    {
-        this->m_layers[i]->fromBinary(input);
-    }
+    return network;
 }
 
 void Network::_initParameters(const size_t& miniBatchSize, const size_t& epoch, const float& eta)
@@ -339,4 +309,23 @@ void Network::_initParameters(const size_t& miniBatchSize, const size_t& epoch, 
     this->m_epoch = epoch;
     this->m_eta = eta;
     this->m_coefficient = eta/miniBatchSize;
+}
+
+bool Network::operator==(const Network& other) const
+{
+    if(this->m_size != other.m_size or
+       this->activationType != other.activationType or
+       this->costType != other.costType)
+    {
+        return false;
+    }
+    
+    for(int i(0); i<this->m_size; i++)
+    {
+        if(!this->m_layers[i]->equals(other.m_layers[i]))
+        {
+            return false;
+        }
+    }
+    return true;
 }
