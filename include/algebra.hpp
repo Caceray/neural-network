@@ -44,14 +44,14 @@ class Cost
 public:
     virtual ~Cost() = default;
     
-    virtual void gradient(const VectorXf& x, const VectorXf& y, VectorXf* result) const = 0;
+    virtual void getGradient(const VectorXf& computedOutput, const VectorXf& expectedOutput, VectorXf& result) const = 0;
 };
 
 class Quadratic : public Cost
 {
 public:
     Quadratic(VectorXf* derivative);
-    void gradient(const VectorXf& x, const VectorXf& y, VectorXf* result) const override;
+    void getGradient(const VectorXf& computedOutput, const VectorXf& expectedOutput, VectorXf& result) const override;
     
 private:
     VectorXf* m_derivative;
@@ -61,6 +61,6 @@ class CrossEntropy : public Cost
 {
 public:
     CrossEntropy();
-    void gradient(const VectorXf& x, const VectorXf& y, VectorXf* result) const override;
+    void getGradient(const VectorXf& computedOutput, const VectorXf& expectedOutput, VectorXf& result) const override;
 };
 #endif /* algebra_hpp */

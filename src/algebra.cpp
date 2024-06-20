@@ -39,15 +39,15 @@ void Softmax::prim(VectorXf& input, VectorXf& output) const
 
 Quadratic::Quadratic(VectorXf* derivative):m_derivative(derivative){}
 
-void Quadratic::gradient(const VectorXf &x, const VectorXf &y, VectorXf* result) const
+void Quadratic::getGradient(const VectorXf& computedOutput, const VectorXf& expectedOutput, VectorXf& result) const
 {
     // NablaC = x-y
-    *result = (x-y).array() * this->m_derivative->array();
+    result = (computedOutput-expectedOutput).array() * this->m_derivative->array();
 }
 
 CrossEntropy::CrossEntropy(){}
 
-void CrossEntropy::gradient(const VectorXf &x, const VectorXf &y, VectorXf* result) const
+void CrossEntropy::getGradient(const VectorXf& computedOutput, const VectorXf& expectedOutput, VectorXf& result) const
 {
-    *result = (x-y).array();
+    result = (computedOutput-expectedOutput).array();
 }

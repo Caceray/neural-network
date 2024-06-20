@@ -30,20 +30,20 @@ void printStatV2(MatrixXf& mat)
 BaseLayer::BaseLayer(const int& in, const int& out, const ActivationType& actiType):
 inSize(in),
 outSize(out),
-m_biases(new VectorXf(out)),
-m_weights(new MatrixXf(out, in)),
-m_deltaB(new VectorXf(out)),
-m_deltaW(new MatrixXf(out, in))
+m_biases(VectorXf(out)),
+m_weights(MatrixXf(out, in)),
+m_deltaB(VectorXf(out)),
+m_deltaW(MatrixXf(out, in))
 {
     this->_initializeBuffers();
     
-    MatrixXf*& W(this->m_weights);
-    VectorXf*& B(this->m_biases);
+    MatrixXf& W(this->m_weights);
+    VectorXf& B(this->m_biases);
     
-    *W = W->unaryExpr([](float){return distribution(BaseLayer::Generator);});
-    *B = B->unaryExpr([](float){return distribution(BaseLayer::Generator);});
+    W = W.unaryExpr([](float){return distribution(BaseLayer::Generator);});
+    B = B.unaryExpr([](float){return distribution(BaseLayer::Generator);});
     
-    *W /= pow(in, .5);
+    W /= pow(in, .5);
 
     switch(actiType)
     {
@@ -60,19 +60,13 @@ m_deltaW(new MatrixXf(out, in))
 
 BaseLayer::~BaseLayer()
 {
-    delete this->m_biases;
-    delete this->m_weights;
-    
-    delete this->m_deltaB;
-    delete this->m_deltaW;
-    
     delete this->m_activationEngine;
 }
 
 void BaseLayer::_initializeBuffers()
 {
-    this->m_deltaW->setZero();
-    this->m_deltaB->setZero();
+    this->m_deltaW.setZero();
+    this->m_deltaB.setZero();
 }
 
 void BaseLayer::_applyMain(VectorXf &a, VectorXf& result) const
@@ -100,40 +94,24 @@ void BaseLayer::feedForwardAndSave(VectorXf &a)
     a = this->m_activation;
 }
 
+void BaseLayer::updateCost(const VectorXf& activation)
+{
+    this->m_deltaB += this->m_deltaComputed; // BP3
+    this->m_deltaW += this->m_deltaComputed * activation.transpose(); // BP4;
+}
+
 void BaseLayer::_getActivation(VectorXf &a) const
 {
-    a = *(this->m_weights)*a + *(this->m_biases);
-}
-
-void BaseLayer::dotProductWithActivation(const VectorXf &delta, MatrixXf *dW) const
-{
-    *dW += delta * (this->m_activation).transpose();
-}
-
-void BaseLayer::dotProductWithWeight(VectorXf& input) const
-{
-    input = (*(this->m_weights)).transpose() * input;
-}
-
-void BaseLayer::updateWeightAndBias(const float &K)
-{
-    *(this->m_weights) -= K * *(this->m_deltaW);
-    *(this->m_biases) -= K * *(this->m_deltaB);
-    this->_initializeBuffers();
-}
-
-MatrixXf* BaseLayer::getTempWeight() const
-{
-    return this->m_deltaW;
+    a = this->m_weights * a + this->m_biases;
 }
 
 HiddenLayer::HiddenLayer(const int& in, const int& out, const ActivationType& actiType):BaseLayer(in, out, actiType){}
 
-void HiddenLayer::getDelta(VectorXf& a) const
+void HiddenLayer::getDelta(VectorXf &product_next)
 {
     // Equation BP2, a is left term : w^{l+1}T * d^{l+1}
-    a = a.array() * this->m_derivative.array();
-    *(this->m_deltaB) += a;
+    this->m_deltaComputed = product_next.array() * this->m_derivative.array();
+    product_next = this->m_weights.transpose() * this->m_deltaComputed;
 }
 
 OutputLayer::OutputLayer(const int& in, const int& out,
@@ -160,11 +138,12 @@ OutputLayer::~OutputLayer()
     delete this->m_costEngine;
 }
 
-void OutputLayer::getDelta(VectorXf& a) const
+void OutputLayer::getDelta(VectorXf& expectedOutput)
 {
     // Equation BP1
-    this->m_costEngine->gradient(this->m_activation, a, &a);
-    *(this->m_deltaB) += a;
+    // Update expectedOutput as the same vector will be re-used during SGD
+    this->m_costEngine->getGradient(this->m_activation, expectedOutput, this->m_deltaComputed);
+    expectedOutput = this->m_weights.transpose() * this->m_deltaComputed;
 }
 
 void getStatistics(float means[], float stds[], const MatrixXf& W, const VectorXf& B)
@@ -181,13 +160,13 @@ void getStatistics(float means[], float stds[], const MatrixXf& W, const VectorX
 
 void BaseLayer::getStat(float means[], float stds[]) const
 {
-    getStatistics(means, stds, *this->m_weights, *this->m_biases);
+    getStatistics(means, stds, this->m_weights, this->m_biases);
 }
 
 void BaseLayer::print() const
 {
-    cout << *this->m_weights << endl;
-    cout << *this->m_biases << endl;
+    cout << this->m_weights << endl;
+    cout << this->m_biases << endl;
 }
 
 void BaseLayer::to_csv(const string& dest) const
@@ -195,6 +174,13 @@ void BaseLayer::to_csv(const string& dest) const
     string weightsFile(dest + "_weight.csv"), biasesFile(dest + "_bias.csv");
     export_to_csv(this->m_weights, weightsFile);
     export_to_csv(this->m_biases, biasesFile);
+}
+
+void BaseLayer::updateWeightAndBias(const float &K)
+{
+    this->m_weights -= K * this->m_deltaW;
+    this->m_biases -= K * this->m_deltaB;
+    this->_initializeBuffers();
 }
 
 template<class Archive>
@@ -250,17 +236,17 @@ void unserializeMatrix(Archive & ar, MatrixXf& m)
 
 void BaseLayer::toBinary(boost::archive::binary_oarchive & ar) const
 {
-    serializeVector(ar, *this->m_biases);
-    serializeMatrix(ar, *this->m_weights);
+    serializeVector(ar, this->m_biases);
+    serializeMatrix(ar, this->m_weights);
 }
 
 void BaseLayer::fromBinary(boost::archive::binary_iarchive & ar)
 {
-    unserializeVector(ar, *this->m_biases);
-    unserializeMatrix(ar, *this->m_weights);
+    unserializeVector(ar, this->m_biases);
+    unserializeMatrix(ar, this->m_weights);
 }
 
-bool BaseLayer::equals(BaseLayer* other) const
+bool BaseLayer::equals(const BaseLayer& other) const
 {
-    return *this->m_weights == *other->m_weights and *this->m_biases == *other->m_biases;
+    return this->m_weights == other.m_weights and this->m_biases == other.m_biases;
 }
