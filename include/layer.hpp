@@ -16,22 +16,20 @@ using Eigen::VectorXf;
 class BaseLayer
 {
 public:
+    BaseLayer() = delete;
     BaseLayer(const int& in, const int& out, const ActivationType& actiType);
     virtual ~BaseLayer();
-    
-    // Getters
-    MatrixXf* getTempWeight() const;
     
     // Main methods
     void feedForward(VectorXf& a) const;
     void feedForwardAndSave(VectorXf& a);
+    void updateCost(const VectorXf& activation);
+    const VectorXf& getActivation() const { return this->m_activation; }
     
-    void dotProductWithActivation(const VectorXf& input, MatrixXf* result) const;
-    void dotProductWithWeight(VectorXf& input) const;
     void updateWeightAndBias(const float& K);
     
     // Virtual methods
-    virtual void getDelta(VectorXf& a) const = 0;
+    virtual void getDelta(VectorXf& a) = 0;
     
     // Stats
     void getStat(float means[], float stds[]) const;
@@ -43,7 +41,7 @@ public:
     void toBinary(boost::archive::binary_oarchive & ar) const;
     void fromBinary(boost::archive::binary_iarchive & ar);
 
-    bool equals(BaseLayer* other) const;
+    bool equals(const BaseLayer& other) const;
     
     const int inSize;
     const int outSize;
@@ -51,17 +49,18 @@ protected:
     static std::mt19937 Generator;
     
     // Current weights and biases
-    VectorXf* m_biases;
-    MatrixXf* m_weights;
+    VectorXf m_biases;
+    MatrixXf m_weights;
     
     // Temporary weights and biases
-    VectorXf* m_deltaB;
-    MatrixXf* m_deltaW;
+    VectorXf m_deltaB;
+    MatrixXf m_deltaW;
     
     Activation* m_activationEngine;
     
     VectorXf m_activation;
     VectorXf m_derivative;
+    VectorXf m_deltaComputed;
     
     void _applyMain(VectorXf& a, VectorXf& result) const;
     void _applyPrim(VectorXf& a, VectorXf& result) const;
@@ -76,7 +75,7 @@ class HiddenLayer : public BaseLayer
 public :
     HiddenLayer(const int& in, const int& out, const ActivationType& actiType);
     
-    void getDelta(VectorXf& a) const override;
+    void getDelta(VectorXf& product_next) override;
 };
 
 class OutputLayer : public BaseLayer
@@ -85,7 +84,7 @@ public:
     OutputLayer(const int& in, const int& out, const ActivationType& actiType, const CostType& costType);
     ~OutputLayer();
     
-    void getDelta(VectorXf& a) const override;
+    void getDelta(VectorXf& expectedOutput) override;
     
 private:
     Cost* m_costEngine;

@@ -17,9 +17,11 @@ class Network
 {
 public:
     Network(const int sizes[], const int& N, const ActivationType& actiType, const CostType& costType);
+    Network& operator=(const Network&& other) = delete;
     ~Network();
     
     static Network* loadFile(const std::string& fileName);
+    static Network* loadBinary(boost::archive::binary_iarchive & ar);
     
     void SGD(Dataset& dataset, const size_t& miniBatchSize, const size_t& epoch, const float& eta, const bool displayProgress = false);
     void feedForward(VectorXf& input) const;
@@ -28,7 +30,6 @@ public:
     void to_csv(const std::string& dest) const;
     void toBinary(const std::string& dest) const;
     void toBinary(boost::archive::binary_oarchive & ar) const;
-    void loadBinary(boost::archive::binary_iarchive & ar) const;
     
     void getStats() const;
         
@@ -55,6 +56,5 @@ private:
     void _backprop(const DataPair& datapair) const;
     void _updateMiniBatch(size_t& offset, Dataset& dataset);
     void _updateWeightsAndBiases();
-    void _updateWeightsAndBiasesAndEvaluateDelta(const Dataset& dataset);
 };
 #endif /* engine_hpp */

@@ -116,8 +116,6 @@ void Network::_updateMiniBatch(size_t& offset, Dataset &dataset)
 
 void Network::_backprop(const DataPair &datapair) const
 {
-    const int& N(this->m_size);
-
     VectorXf activation(datapair.input);
 
     // Feedforward
@@ -129,25 +127,16 @@ void Network::_backprop(const DataPair &datapair) const
     activation = datapair.output;
 
     // Backward
-    for(auto it = this->m_layers.rbegin(); it != this->m_layers.rend(); ++it)
+    auto it = this->m_layers.rbegin();
+    for(int i(0); i<this->m_size-1; i++)
     {
         (*it)->getDelta(activation);
-
-        MatrixXf* dW((*it)->getTempWeight());
-        if(&(**it) != m_layers[0])
-        {
-            // Compute BP4
-            auto next_it = it; ++next_it;
-            (*next_it)->dotProductWithActivation(activation, dW);
-        }
-        else
-        {
-            *dW += activation * datapair.input.transpose();
-        }
-        
-        // Compute left term of BP3
-        (*it)->dotProductWithWeight(activation);
+        (*it)->updateCost((*next(it))->getActivation());
+        it++;
     }
+    assert(*it == this->m_layers[0]);
+    (*it)->getDelta(activation);
+    (*it)->updateCost(datapair.input);
 }
 
 void Network::_updateWeightsAndBiases()
@@ -156,35 +145,6 @@ void Network::_updateWeightsAndBiases()
     {
         this->m_layers[i]->updateWeightAndBias(this->m_coefficient);
     }
-}
-
-void Network::_updateWeightsAndBiasesAndEvaluateDelta(const Dataset& dataset)
-{
-    VectorXf before(dataset[0].output * 0), after(dataset[0].output * 0);
-    int N((int)this->m_miniBatchSize);
-    for(int i(0); i<N; i++)
-    {
-        VectorXf x(dataset[i].input);
-        this->feedForward(x);
-        before += x;
-    }
-
-    for(int i(0); i < this->m_size; i++)
-    {
-        this->m_layers[i]->updateWeightAndBias(this->m_coefficient);
-    }
-    
-    for(int i(0); i<N; i++)
-    {
-        VectorXf x(dataset[i].input);
-        this->feedForward(x);
-        after += x;
-    }
-    
-    cout << vectorAsString(before/N) << endl;
-    cout << vectorAsString(after/N) << endl;
-    cout << vectorAsString((before-after)/N) << endl;
-    cout << endl;
 }
 
 float Network::evaluateAccuracy(Dataset& dataset) const
@@ -275,12 +235,24 @@ void Network::toBinary(boost::archive::binary_oarchive & ar) const
     }
 }
 
-void Network::loadBinary(boost::archive::binary_iarchive &ar) const
+Network* Network::loadBinary(boost::archive::binary_iarchive &ar)
 {
-    for(int i(0); i<this->m_size; i++)
+    int N; ar >> N;
+    ActivationType activationType; ar >> activationType;
+    CostType costType; ar >> costType;
+    
+    int *sizes = new int[N+1];
+    for(int i(0); i<N+1; i++)
     {
-        this->m_layers[i]->fromBinary(ar);
+        ar >> sizes[i];
     }
+
+    Network* network = new Network(sizes, N+1, activationType, costType);
+    for(int i(0); i<network->m_size; i++)
+    {
+        network->m_layers[i]->fromBinary(ar);
+    }
+    return network;
 }
 
 Network* Network::loadFile(const string &fileName)
@@ -288,20 +260,7 @@ Network* Network::loadFile(const string &fileName)
     ifstream file(fileName, ios::binary);
     boost::archive::binary_iarchive input(file);
     
-    int N; input >> N;
-    ActivationType activationType; input >> activationType;
-    CostType costType; input >> costType;
-    
-    int *sizes = new int[N+1];
-    for(int i(0); i<N+1; i++)
-    {
-        input >> sizes[i];
-    }
-
-    Network* network = new Network(sizes, N+1, activationType, costType);
-    network->loadBinary(input);
-    
-    return network;
+    return loadBinary(input);
 }
 
 void Network::_initParameters(const size_t& miniBatchSize, const size_t& epoch, const float& eta)
@@ -323,7 +282,7 @@ bool Network::operator==(const Network& other) const
     
     for(int i(0); i<this->m_size; i++)
     {
-        if(!this->m_layers[i]->equals(other.m_layers[i]))
+        if(!this->m_layers[i]->equals(*other.m_layers[i]))
         {
             return false;
         }
