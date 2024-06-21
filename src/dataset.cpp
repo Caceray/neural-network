@@ -67,10 +67,10 @@ Dataset::Dataset(const string& filename):Dataset()
     }
     
     // Add training data in vector to shuffle during SGD
-    this->m_data = vector<DataPair*>(this->m_sizeTraining);
+    this->m_data = new vector<DataPair*>(this->m_sizeTraining);
     for(size_t i(0); i<this->m_sizeTraining; i++)
     {
-        this->m_data[i] = m_training[i];
+        (*this->m_data)[i] = m_training[i];
     }
 }
 
@@ -105,10 +105,10 @@ void Dataset::addTrainingData(DataPair **data, const size_t& size)
     this->_populate(this->m_training, data, size);
     
     // Add training data in vector to shuffle during SGD
-    this->m_data = vector<DataPair*>(size);
+    this->m_data = new vector<DataPair*>(size);
     for(size_t i(0); i<size; i++)
     {
-        this->m_data[i] = m_training[i];
+        (*this->m_data)[i] = m_training[i];
     }
 }
 
@@ -127,12 +127,12 @@ void Dataset::_populate(DataPair **container, DataPair **data, const size_t& siz
     }
 }
 
-size_t Dataset::trainingSize(){return this->m_sizeTraining;}
-size_t Dataset::validationSize(){return this->m_sizeValidation;}
+size_t Dataset::trainingSize() const {return this->m_sizeTraining;}
+size_t Dataset::validationSize() const {return this->m_sizeValidation;}
 
-DataPair Dataset::operator[](const size_t& idx) const
+const DataPair& Dataset::operator[](const size_t& idx) const
 {
-    return *(this->m_data[idx]);
+    return *(*this->m_data)[idx];
 }
 
 DataPair Dataset::getTestData(const size_t& i) const
@@ -140,9 +140,9 @@ DataPair Dataset::getTestData(const size_t& i) const
     return *(this->m_validation[i]);
 }
 
-void Dataset::shuffle()
+void Dataset::shuffle() const
 {
-    std::shuffle(m_data.begin(), m_data.end(), Generator);
+    std::shuffle(this->m_data->begin(), this->m_data->end(), Generator);
 }
 
 ostream& operator<<(ostream& os, const DataPair& datapair)

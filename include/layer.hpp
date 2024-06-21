@@ -63,11 +63,9 @@ protected:
     VectorXf m_deltaComputed;
     
     void _applyMain(VectorXf& a) const;
-    void _applyPrim(VectorXf& a, VectorXf& result) const;
     
 private:
     void _initializeBuffers();
-    void _getActivation(VectorXf& a) const;
 };
 
 class HiddenLayer : public BaseLayer

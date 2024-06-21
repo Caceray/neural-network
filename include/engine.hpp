@@ -23,7 +23,7 @@ public:
     static Network* loadFile(const std::string& fileName);
     static Network* loadBinary(boost::archive::binary_iarchive & ar);
     
-    void SGD(Dataset& dataset, const size_t& miniBatchSize, const size_t& epoch, const float& eta, const bool displayProgress = false);
+    void SGD(const Dataset& dataset, const size_t& miniBatchSize, const size_t& epoch, const float& eta, const bool displayProgress = false);
     void feedForward(VectorXf& input) const;
     
     void print() const;
@@ -33,7 +33,7 @@ public:
     
     void getStats() const;
         
-    float evaluateAccuracy(Dataset& dataset) const;
+    float evaluateAccuracy(const Dataset& dataset) const;
     
     const ActivationType activationType;
     const CostType costType;
@@ -54,7 +54,6 @@ private:
     //SGD functions
     void _initParameters(const size_t& miniBatchSize, const size_t& epoch, const float& eta);
     void _backprop(const DataPair& datapair) const;
-    void _updateMiniBatch(size_t& offset, Dataset& dataset);
     void _updateWeightsAndBiases();
 };
 #endif /* engine_hpp */

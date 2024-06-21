@@ -63,7 +63,7 @@ Network::~Network()
     }
 }
 
-void Network::SGD(Dataset& dataset, const size_t& miniBatchSize, const size_t& epoch, const float& eta, const bool displayProgress)
+void Network::SGD(const Dataset& dataset, const size_t& miniBatchSize, const size_t& epoch, const float& eta, const bool displayProgress)
 {
     this->_initParameters(miniBatchSize, epoch, eta);
     
@@ -83,9 +83,14 @@ void Network::SGD(Dataset& dataset, const size_t& miniBatchSize, const size_t& e
     for(size_t e(0); e < this->m_epoch; e++)
     {
         dataset.shuffle();
-        for(size_t i(0); i<nBatches; i++)
+        for(size_t batch(0); batch<nBatches; batch++)
         {
-            this->_updateMiniBatch(i, dataset);
+            size_t offset(batch * this->m_miniBatchSize);
+            for(size_t i(0); i<this->m_miniBatchSize; i++)
+            {
+                this->_backprop(dataset[i + offset]);
+            }
+            this->_updateWeightsAndBiases();
         }
     }
     
@@ -102,16 +107,6 @@ void Network::feedForward(VectorXf &input) const
     {
         this->m_layers[j]->feedForward(input);
     }
-}
-
-void Network::_updateMiniBatch(size_t& offset, Dataset &dataset)
-{
-    for(size_t i(0); i<this->m_miniBatchSize; i++)
-    {
-        size_t idx(i + offset * this->m_miniBatchSize);
-        this->_backprop(dataset[idx]);
-    }
-    this->_updateWeightsAndBiases();
 }
 
 void Network::_backprop(const DataPair &datapair) const
@@ -147,7 +142,7 @@ void Network::_updateWeightsAndBiases()
     }
 }
 
-float Network::evaluateAccuracy(Dataset& dataset) const
+float Network::evaluateAccuracy(const Dataset& dataset) const
 {
     // A valid output response is an output response where the index 
     // of the largest element is equal to the index of the largest
