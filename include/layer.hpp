@@ -62,7 +62,7 @@ protected:
     VectorXf m_derivative;
     VectorXf m_deltaComputed;
     
-    void _applyMain(VectorXf& a, VectorXf& result) const;
+    void _applyMain(VectorXf& a) const;
     void _applyPrim(VectorXf& a, VectorXf& result) const;
     
 private:

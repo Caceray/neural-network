@@ -69,10 +69,10 @@ void BaseLayer::_initializeBuffers()
     this->m_deltaB.setZero();
 }
 
-void BaseLayer::_applyMain(VectorXf &a, VectorXf& result) const
+void BaseLayer::_applyMain(VectorXf &a) const
 {
-    this->m_activationEngine->main(a, result);
-    assert(!result.array().isNaN().any());
+    this->m_activationEngine->main(a);
+    assert(!a.array().isNaN().any());
 }
 
 void BaseLayer::_applyPrim(VectorXf &a, VectorXf& result) const
@@ -83,15 +83,15 @@ void BaseLayer::_applyPrim(VectorXf &a, VectorXf& result) const
 void BaseLayer::feedForward(VectorXf &a) const
 {
     this->_getActivation(a);
-    this->_applyMain(a, a);
+    this->_applyMain(a);
 }
 
 void BaseLayer::feedForwardAndSave(VectorXf &a)
 {
     this->_getActivation(a);
-    this->_applyMain(a, this->m_activation);
-    this->_applyPrim(a, this->m_derivative);
-    a = this->m_activation;
+    this->_applyMain(a);
+    this->m_activation = a;
+    this->_applyPrim(this->m_activation, this->m_derivative);
 }
 
 void BaseLayer::updateCost(const VectorXf& activation)

@@ -23,20 +23,20 @@ class Activation
 {
 public:
     virtual ~Activation() = default;
-    virtual void main(VectorXf& input, VectorXf& output) const = 0;
-    virtual void prim(VectorXf& input, VectorXf& output) const = 0;
+    virtual void main(VectorXf& input) const = 0;
+    virtual void prim(const VectorXf& activation, VectorXf& output) const = 0;
 };
 
 class Sigmoid : public Activation
 {
-    void main(VectorXf& input, VectorXf& output) const override;
-    void prim(VectorXf& input, VectorXf& output) const override;
+    void main(VectorXf& input) const override;
+    void prim(const VectorXf& activation, VectorXf& output) const override;
 };
 
 class Softmax : public Activation
 {
-    void main(VectorXf& input, VectorXf& output) const override;
-    void prim(VectorXf& input, VectorXf& output) const override;
+    void main(VectorXf& input) const override;
+    void prim(const VectorXf& activation, VectorXf& output) const override;
 };
 
 class Cost
