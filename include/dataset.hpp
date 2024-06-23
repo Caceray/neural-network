@@ -29,13 +29,13 @@ public:
     void addTrainingData(DataPair* data[], const size_t& size);
     void addValidationData(DataPair* data[], const size_t& size);
     
-    size_t trainingSize();
-    size_t validationSize();
+    size_t trainingSize() const;
+    size_t validationSize() const;
     
-    DataPair operator[](const size_t& i) const;
+    const DataPair& operator[](const size_t& i) const;
     DataPair getTestData(const size_t& i) const;
     
-    void shuffle();
+    void shuffle() const;
     
     void toBinary(const std::string& dest) const;
     
@@ -49,7 +49,7 @@ private:
     size_t m_sizeValidation;
     DataPair** m_validation;
     
-    std::vector<DataPair*> m_data;
+    std::vector<DataPair*>* m_data;
     
     void _populate(DataPair** container, DataPair** data, const size_t& N);
 };

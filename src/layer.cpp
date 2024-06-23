@@ -69,40 +69,28 @@ void BaseLayer::_initializeBuffers()
     this->m_deltaB.setZero();
 }
 
-void BaseLayer::_applyMain(VectorXf &a, VectorXf& result) const
+void BaseLayer::_applyMain(VectorXf &a) const
 {
-    this->m_activationEngine->main(a, result);
-    assert(!result.array().isNaN().any());
-}
-
-void BaseLayer::_applyPrim(VectorXf &a, VectorXf& result) const
-{
-    this->m_activationEngine->prim(a, result);
+    a = this->m_weights * a + this->m_biases;
+    this->m_activationEngine->main(a);
 }
 
 void BaseLayer::feedForward(VectorXf &a) const
 {
-    this->_getActivation(a);
-    this->_applyMain(a, a);
+    this->_applyMain(a);
 }
 
 void BaseLayer::feedForwardAndSave(VectorXf &a)
 {
-    this->_getActivation(a);
-    this->_applyMain(a, this->m_activation);
-    this->_applyPrim(a, this->m_derivative);
-    a = this->m_activation;
+    this->_applyMain(a);
+    this->m_activation = a;
+    this->m_activationEngine->prim(this->m_activation, this->m_derivative);
 }
 
 void BaseLayer::updateCost(const VectorXf& activation)
 {
     this->m_deltaB += this->m_deltaComputed; // BP3
     this->m_deltaW += this->m_deltaComputed * activation.transpose(); // BP4;
-}
-
-void BaseLayer::_getActivation(VectorXf &a) const
-{
-    a = this->m_weights * a + this->m_biases;
 }
 
 HiddenLayer::HiddenLayer(const int& in, const int& out, const ActivationType& actiType):BaseLayer(in, out, actiType){}
@@ -129,8 +117,6 @@ OutputLayer::OutputLayer(const int& in, const int& out,
         default:
             throw;
     }
-    
-//    (*this->m_biases)(1) = 10;
 }
 
 OutputLayer::~OutputLayer()

@@ -10,31 +10,29 @@ using namespace std;
 using Eigen::MatrixXf;
 using Eigen::VectorXf;
 
-void Sigmoid::main(VectorXf& input, VectorXf& output) const
+void Sigmoid::main(VectorXf& input) const
 {
-    output = input.unaryExpr( [](float x){return 1 / (1+exp(-x));} );
+    input = input.unaryExpr( [](float x){return 1 / (1+exp(-x));} );
 }
 
-void Sigmoid::prim(VectorXf& input, VectorXf& output) const
+void Sigmoid::prim(const VectorXf& activation, VectorXf& output) const
 {
-    VectorXf S; this->main(input, S);
-    output = S.array() * (1-S.array());
+    output = activation.array() * (1-activation.array());
 }
 
-void Softmax::main(VectorXf& input, VectorXf& output) const
+void Softmax::main(VectorXf& input) const
 {
     // Normalize before computing softmax
     input.array() -= input.maxCoeff();
 
     // Softmax formula
-    output = input.unaryExpr( [](float x){return exp(x);} );
-    output /= output.sum();
+    input = input.unaryExpr( [](float x){return exp(x);} );
+    input /= input.sum();
 }
 
-void Softmax::prim(VectorXf& input, VectorXf& output) const
+void Softmax::prim(const VectorXf& activation, VectorXf& output) const
 {
-    VectorXf S; this->main(input, S);
-    output = S.array() * (1-S.array());
+    output = activation.array() * (1-activation.array());
 }
 
 Quadratic::Quadratic(VectorXf* derivative):m_derivative(derivative){}
