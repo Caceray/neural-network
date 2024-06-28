@@ -23,18 +23,21 @@ class Activation
 {
 public:
     virtual ~Activation() = default;
+    virtual Activation* clone() const = 0;
     virtual void main(VectorXf& input) const = 0;
     virtual void prim(const VectorXf& activation, VectorXf& output) const = 0;
 };
 
 class Sigmoid : public Activation
 {
+    Activation* clone() const override;
     void main(VectorXf& input) const override;
     void prim(const VectorXf& activation, VectorXf& output) const override;
 };
 
 class Softmax : public Activation
 {
+    Activation* clone() const override;
     void main(VectorXf& input) const override;
     void prim(const VectorXf& activation, VectorXf& output) const override;
 };
@@ -43,7 +46,6 @@ class Cost
 {
 public:
     virtual ~Cost() = default;
-    
     virtual void getGradient(const VectorXf& computedOutput, const VectorXf& expectedOutput, VectorXf& result) const = 0;
 };
 

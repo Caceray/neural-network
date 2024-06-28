@@ -17,6 +17,9 @@ class Network
 {
 public:
     Network(const int sizes[], const int& N, const ActivationType& actiType, const CostType& costType);
+    Network(const Network& other);
+    
+    Network& operator=(const Network& other) = delete;
     Network& operator=(const Network&& other) = delete;
     ~Network();
     
@@ -41,19 +44,10 @@ public:
     bool operator == (const Network& other) const;
 private:
     // Construction
-    const int m_size;
-    const int* m_sizes;
+    std::vector<int> m_sizes;
     std::vector<BaseLayer*> m_layers;
     
-    // SGD
-    float m_eta;
-    size_t m_epoch;
-    float m_coefficient;
-    size_t m_miniBatchSize;
-    
     //SGD functions
-    void _initParameters(const size_t& miniBatchSize, const size_t& epoch, const float& eta);
     void _backprop(const DataPair& datapair) const;
-    void _updateWeightsAndBiases();
 };
 #endif /* engine_hpp */

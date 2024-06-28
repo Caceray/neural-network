@@ -58,6 +58,16 @@ m_deltaW(MatrixXf(out, in))
     }
 }
 
+BaseLayer::BaseLayer(const BaseLayer& other):
+inSize(other.inSize),
+outSize(other.outSize),
+m_biases(other.m_biases),
+m_weights(other.m_weights),
+m_deltaB(other.m_deltaB),
+m_deltaW(other.m_deltaW),
+m_activationEngine(other.m_activationEngine->clone())
+{}
+
 BaseLayer::~BaseLayer()
 {
     delete this->m_activationEngine;
@@ -95,6 +105,11 @@ void BaseLayer::updateCost(const VectorXf& activation)
 
 HiddenLayer::HiddenLayer(const int& in, const int& out, const ActivationType& actiType):BaseLayer(in, out, actiType){}
 
+BaseLayer* HiddenLayer::clone() const
+{
+    return new HiddenLayer(*this);
+}
+
 void HiddenLayer::getDelta(VectorXf &product_next)
 {
     // Equation BP2, a is left term : w^{l+1}T * d^{l+1}
@@ -118,6 +133,37 @@ OutputLayer::OutputLayer(const int& in, const int& out,
             throw;
     }
 }
+
+BaseLayer* OutputLayer::clone() const
+{
+    return new OutputLayer(*this);
+}
+
+OutputLayer::OutputLayer(const OutputLayer& other):
+BaseLayer(other)
+{
+    if(dynamic_cast<Quadratic*>(this->m_costEngine))
+    {
+        this->m_costEngine = new Quadratic(&this->m_derivative);
+    }
+    else if(dynamic_cast<CrossEntropy*>(this->m_costEngine))
+    {
+        this->m_costEngine = new CrossEntropy();
+    }
+}
+
+//OutputLayer::OutputLayer(OutputLayer&& other):BaseLayer(other)
+//{
+//    this->m_costEngine = other.m_costEngine;
+//    if(dynamic_cast<Quadratic*>(this->m_costEngine))
+//    {
+//        this->m_costEngine = new Quadratic(&this->m_derivative);
+//    }
+//    else if(dynamic_cast<CrossEntropy*>(this->m_costEngine))
+//    {
+//        this->m_costEngine = new CrossEntropy();
+//    }
+//};
 
 OutputLayer::~OutputLayer()
 {

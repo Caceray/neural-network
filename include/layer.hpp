@@ -17,7 +17,12 @@ class BaseLayer
 {
 public:
     BaseLayer() = delete;
+    
     BaseLayer(const int& in, const int& out, const ActivationType& actiType);
+    BaseLayer(const BaseLayer& other);
+    BaseLayer(BaseLayer&& other);
+    
+    virtual BaseLayer* clone() const = 0;
     virtual ~BaseLayer();
     
     // Main methods
@@ -72,7 +77,10 @@ class HiddenLayer : public BaseLayer
 {
 public :
     HiddenLayer(const int& in, const int& out, const ActivationType& actiType);
+    HiddenLayer(const HiddenLayer& other):BaseLayer(other){}
+    HiddenLayer(const BaseLayer& other):BaseLayer(other){}
     
+    BaseLayer* clone() const override;
     void getDelta(VectorXf& product_next) override;
 };
 
@@ -80,8 +88,13 @@ class OutputLayer : public BaseLayer
 {
 public:
     OutputLayer(const int& in, const int& out, const ActivationType& actiType, const CostType& costType);
+    OutputLayer(const OutputLayer& other);
+    OutputLayer(OutputLayer&& other) = delete;
+    OutputLayer& operator=(const OutputLayer& other) = delete;
+    OutputLayer& operator=(OutputLayer&& other) = delete;
     ~OutputLayer();
     
+    BaseLayer* clone() const override;
     void getDelta(VectorXf& expectedOutput) override;
     
 private:

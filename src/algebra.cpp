@@ -20,6 +20,11 @@ void Sigmoid::prim(const VectorXf& activation, VectorXf& output) const
     output = activation.array() * (1-activation.array());
 }
 
+Activation* Sigmoid::clone() const
+{
+    return new Sigmoid();
+}
+
 void Softmax::main(VectorXf& input) const
 {
     // Normalize before computing softmax
@@ -33,6 +38,11 @@ void Softmax::main(VectorXf& input) const
 void Softmax::prim(const VectorXf& activation, VectorXf& output) const
 {
     output = activation.array() * (1-activation.array());
+}
+
+Activation* Softmax::clone() const
+{
+    return new Softmax();
 }
 
 Quadratic::Quadratic(VectorXf* derivative):m_derivative(derivative){}

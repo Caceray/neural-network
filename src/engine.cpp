@@ -37,37 +37,42 @@ string vectorAsString(const VectorXf& v)
 Network::Network(const int sizes[], const int& N, const ActivationType& actiType, const CostType& costType):
 activationType(actiType),
 costType(costType),
-m_size(N-1),
+m_sizes(vector<int>(N)),
 m_layers(vector<BaseLayer*>(N-1))
 {
-    int *mySize = new int[N];
-    for(int i(0); i<N; i++)
-    {
-        mySize[i] = sizes[i];
-    }
-    this->m_sizes = mySize;
-    const int& layersCount(this->m_size);
-    for(int i(0); i<layersCount-1; i++)
+    for(int i(0); i<N-2; i++)
     {
         this->m_layers[i] = new HiddenLayer(sizes[i], sizes[i+1], ActivationType::Sigmoid);
     }
     
-    this->m_layers[layersCount-1] = new OutputLayer(sizes[N-2], sizes[N-1], actiType, costType);
+    this->m_layers.back() = new OutputLayer(sizes[N-2], sizes[N-1], actiType, costType);
+}
+
+Network::Network(const Network& other):
+activationType(other.activationType),
+costType(other.costType),
+m_sizes(other.m_sizes),
+m_layers(vector<BaseLayer*>(other.m_layers.size()))
+{
+    int i(0);
+    for(BaseLayer* &l: this->m_layers)
+    {
+        l = other.m_layers[i]->clone();
+        i++;
+    }
 }
 
 Network::~Network()
 {
-    for(int i(0); i<this->m_size; i++)
+    for(BaseLayer* l:this->m_layers)
     {
-        delete this->m_layers[i];
+        delete l;
     }
 }
 
 void Network::SGD(const Dataset& dataset, const size_t& miniBatchSize, const size_t& epoch, const float& eta, const bool displayProgress)
 {
-    this->_initParameters(miniBatchSize, epoch, eta);
-    
-    size_t nBatches(dataset.trainingSize()/this->m_miniBatchSize);
+    size_t nBatches(dataset.trainingSize()/miniBatchSize);
     cout << "Running SGD, batches count = "+to_string(nBatches) << "\n";
     
     if(displayProgress)
@@ -80,17 +85,22 @@ void Network::SGD(const Dataset& dataset, const size_t& miniBatchSize, const siz
         cout << "Accuracy BEFORE training : " << acc << "%.\n";
     }
     
-    for(size_t e(0); e < this->m_epoch; e++)
+    float coefficient(eta/miniBatchSize);
+    for(size_t e(0); e < epoch; e++)
     {
         dataset.shuffle();
         for(size_t batch(0); batch<nBatches; batch++)
         {
-            size_t offset(batch * this->m_miniBatchSize);
-            for(size_t i(0); i<this->m_miniBatchSize; i++)
+            size_t offset(batch * miniBatchSize);
+            for(size_t i(0); i < miniBatchSize; i++)
             {
                 this->_backprop(dataset[i + offset]);
             }
-            this->_updateWeightsAndBiases();
+            
+            for(BaseLayer* l:this->m_layers)
+            {
+                l->updateWeightAndBias(coefficient);
+            }
         }
     }
     
@@ -103,9 +113,9 @@ void Network::SGD(const Dataset& dataset, const size_t& miniBatchSize, const siz
 
 void Network::feedForward(VectorXf &input) const
 {
-    for(int j(0); j<this->m_size; j++)
+    for(BaseLayer* l:this->m_layers)
     {
-        this->m_layers[j]->feedForward(input);
+        l->feedForward(input);
     }
 }
 
@@ -123,7 +133,7 @@ void Network::_backprop(const DataPair &datapair) const
 
     // Backward
     auto it = this->m_layers.rbegin();
-    for(int i(0); i<this->m_size-1; i++)
+    for(size_t i(0); i<this->m_layers.size()-1; i++)
     {
         (*it)->getDelta(activation);
         (*it)->updateCost((*next(it))->getActivation());
@@ -132,14 +142,6 @@ void Network::_backprop(const DataPair &datapair) const
     assert(*it == this->m_layers[0]);
     (*it)->getDelta(activation);
     (*it)->updateCost(datapair.input);
-}
-
-void Network::_updateWeightsAndBiases()
-{
-    for(int i(0); i < this->m_size; i++)
-    {
-        this->m_layers[i]->updateWeightAndBias(this->m_coefficient);
-    }
 }
 
 float Network::evaluateAccuracy(const Dataset& dataset) const
@@ -177,11 +179,12 @@ void Network::getStats() const
     float means[2];
     float stds[2];
     stringstream ss;
-    
-    for(int i(0); i<this->m_size; i++)
+
+    int i(0);
+    for(BaseLayer* l:this->m_layers)
     {
-        this->m_layers[i]->getStat(means, stds);
-        ss << "Stats (mean/stdev) for layer " << i << endl;
+        l->getStat(means, stds);
+        ss << "Stats (mean/stdev) for layer " << i << endl; i++;
         ss << "Weights : " << means[0] << " / " << stds[0] << endl;
         ss << "Biases : " << means[1] << " / " << stds[1] << endl << endl;
     }
@@ -190,20 +193,22 @@ void Network::getStats() const
 
 void Network::print() const
 {
-    for(int i(0); i<this->m_size; i++)
+    int i(0);
+    for(BaseLayer* l:this->m_layers)
     {
-        cout << "Layer [" << i << "]" << endl;
-        this->m_layers[i]->print();
+        cout << "Layer [" << i << "]" << endl; i++;
+        l->print();
     }
 }
 
 void Network::to_csv(const string& dest) const
 {
-    for(int i(0); i<this->m_size; i++)
+    int i(0);
+    for(BaseLayer* l:this->m_layers)
     {
         stringstream file;
-        file << dest << "layer_" << i;
-        this->m_layers[i]->to_csv(file.str());
+        file << dest << "layer_" << i; i++;
+        l->to_csv(file.str());
     }
 }
 
@@ -216,36 +221,37 @@ void Network::toBinary(const std::string &dest) const
 
 void Network::toBinary(boost::archive::binary_oarchive & ar) const
 {
-    ar << this->m_size;
     ar << this->activationType;
     ar << this->costType;
     
-    for(int i(0); i<this->m_size+1; i++)
+    ar << this->m_sizes.size();
+    for(const int& s:this->m_sizes)
     {
-        ar << this->m_sizes[i];
+        ar << s;
     }
-    for(int i(0); i<this->m_size; i++)
+    
+    for(BaseLayer* l:this->m_layers)
     {
-        this->m_layers[i]->toBinary(ar);
+        l->toBinary(ar);
     }
 }
 
 Network* Network::loadBinary(boost::archive::binary_iarchive &ar)
 {
-    int N; ar >> N;
     ActivationType activationType; ar >> activationType;
     CostType costType; ar >> costType;
     
-    int *sizes = new int[N+1];
-    for(int i(0); i<N+1; i++)
+    size_t N; ar >> N;
+    int sizes[N];
+    for(int i(0); i<(int)N; i++)
     {
         ar >> sizes[i];
     }
 
-    Network* network = new Network(sizes, N+1, activationType, costType);
-    for(int i(0); i<network->m_size; i++)
+    Network* network = new Network(sizes, (int)N, activationType, costType);
+    for(BaseLayer* l:network->m_layers)
     {
-        network->m_layers[i]->fromBinary(ar);
+        l->fromBinary(ar);
     }
     return network;
 }
@@ -258,29 +264,23 @@ Network* Network::loadFile(const string &fileName)
     return loadBinary(input);
 }
 
-void Network::_initParameters(const size_t& miniBatchSize, const size_t& epoch, const float& eta)
-{
-    this->m_miniBatchSize = miniBatchSize;
-    this->m_epoch = epoch;
-    this->m_eta = eta;
-    this->m_coefficient = eta/miniBatchSize;
-}
-
 bool Network::operator==(const Network& other) const
 {
-    if(this->m_size != other.m_size or
+    if(this->m_sizes != other.m_sizes or
        this->activationType != other.activationType or
        this->costType != other.costType)
     {
         return false;
     }
     
-    for(int i(0); i<this->m_size; i++)
+    int i(0);
+    for(BaseLayer* l:this->m_layers)
     {
-        if(!this->m_layers[i]->equals(*other.m_layers[i]))
+        if(!l->equals(*other.m_layers[i]))
         {
             return false;
         }
+        i++;
     }
     return true;
 }
